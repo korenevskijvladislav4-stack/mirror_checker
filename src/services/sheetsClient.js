@@ -188,6 +188,8 @@ export async function appendCheckLog({
   project,
   mirrorName,
   url,
+  oldUrl,
+  newUrl,
   status,
   error,
   checkedAt,
@@ -204,6 +206,8 @@ export async function appendCheckLog({
       project ?? "",
       mirrorName ?? "",
       url ?? "",
+      oldUrl ?? "",
+      newUrl ?? "",
       checkedAt ?? new Date().toISOString(),
       status ?? "",
       error ?? "",
@@ -212,7 +216,7 @@ export async function appendCheckLog({
 
   await sheets.spreadsheets.values.append({
     spreadsheetId: normalizeSpreadsheetId(Env.GOOGLE_SPREADSHEET_ID),
-    range: `${sheetName}!A:F`,
+    range: `${sheetName}!A:H`,
     valueInputOption: "RAW",
     insertDataOption: "INSERT_ROWS",
     requestBody: { values },

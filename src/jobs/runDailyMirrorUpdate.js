@@ -123,6 +123,7 @@ async function fillEmptyFromOtherMirror({ row, meta, which, dryRun }) {
   const isMirror2 = which === "mirror2";
   const other = isMirror2 ? row.mirror3 : row.mirror2;
   const existingOtherUrl = other;
+  const previousValue = "";
 
   const otherNum = extractMirrorNumber(other);
   if (otherNum === null) {
@@ -252,6 +253,7 @@ export async function runDailyMirrorUpdate({ dryRun = false } = {}) {
         changed: [],
         filled: [],
         removed: [],
+        transitions: {},
         errors: {},
       };
 
@@ -264,17 +266,27 @@ export async function runDailyMirrorUpdate({ dryRun = false } = {}) {
       // Если ячейка пустая, пробуем заполнить от соседнего зеркала +1..+10.
       if (!hasMirror2 && hasMirror3) {
         const filled = await fillEmptyFromOtherMirror({ row, meta, which: "mirror2", dryRun });
-        if (filled) rowResult.filled.push("mirror2");
+        if (filled) {
+          rowResult.filled.push("mirror2");
+          rowResult.transitions.mirror2 = { from: "", to: row.mirror2 };
+        }
       }
       if (!hasMirror3 && hasMirror2) {
         const filled = await fillEmptyFromOtherMirror({ row, meta, which: "mirror3", dryRun });
-        if (filled) rowResult.filled.push("mirror3");
+        if (filled) {
+          rowResult.filled.push("mirror3");
+          rowResult.transitions.mirror3 = { from: "", to: row.mirror3 };
+        }
       }
 
       if (hasMirror2 && ok2 === false) {
+        const before = row.mirror2;
         try {
           const replaced = await replaceIfDown({ row, meta, which: "mirror2", dryRun });
-          if (replaced) rowResult.changed.push("mirror2");
+          if (replaced) {
+            rowResult.changed.push("mirror2");
+            rowResult.transitions.mirror2 = { from: before, to: row.mirror2 };
+          }
         } catch (e) {
           rowResult.errors.mirror2 = e instanceof Error ? e.message : String(e);
           if (!dryRun) {
@@ -286,6 +298,7 @@ export async function runDailyMirrorUpdate({ dryRun = false } = {}) {
               colLetter,
               value: "",
             });
+            rowResult.transitions.mirror2 = { from: before, to: "" };
             row.mirror2 = "";
             rowResult.removed.push("mirror2");
           }
@@ -294,9 +307,13 @@ export async function runDailyMirrorUpdate({ dryRun = false } = {}) {
 
       // Если mirror3 существует и был недоступен, заменяем его с учётом того, что mirror2 мог уже поменяться.
       if (hasMirror3 && ok3 === false) {
+        const before = row.mirror3;
         try {
           const replaced = await replaceIfDown({ row, meta, which: "mirror3", dryRun });
-          if (replaced) rowResult.changed.push("mirror3");
+          if (replaced) {
+            rowResult.changed.push("mirror3");
+            rowResult.transitions.mirror3 = { from: before, to: row.mirror3 };
+          }
         } catch (e) {
           rowResult.errors.mirror3 = e instanceof Error ? e.message : String(e);
           if (!dryRun) {
@@ -308,6 +325,7 @@ export async function runDailyMirrorUpdate({ dryRun = false } = {}) {
               colLetter,
               value: "",
             });
+            rowResult.transitions.mirror3 = { from: before, to: "" };
             row.mirror3 = "";
             rowResult.removed.push("mirror3");
           }
@@ -340,6 +358,8 @@ export async function runDailyMirrorUpdate({ dryRun = false } = {}) {
             project: row.project,
             mirrorName: "mirror2",
             url: row.mirror2,
+            oldUrl: rowResult.transitions.mirror2?.from ?? row.mirror2,
+            newUrl: rowResult.transitions.mirror2?.to ?? "",
             status: mirrorError ? "error" : status,
             error: mirrorError,
             checkedAt,
@@ -369,6 +389,8 @@ export async function runDailyMirrorUpdate({ dryRun = false } = {}) {
             project: row.project,
             mirrorName: "mirror3",
             url: row.mirror3,
+            oldUrl: rowResult.transitions.mirror3?.from ?? row.mirror3,
+            newUrl: rowResult.transitions.mirror3?.to ?? "",
             status: mirrorError ? "error" : status,
             error: mirrorError,
             checkedAt,
