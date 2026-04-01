@@ -76,7 +76,7 @@ async function ensureChecksHeader(sheets) {
 
   const existing = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    range: `${sheetName}!A1:F1`,
+    range: `${sheetName}!A1:G1`,
   });
 
   const row = existing.data.values?.[0] ?? [];
@@ -85,7 +85,7 @@ async function ensureChecksHeader(sheets) {
 
   await sheets.spreadsheets.values.update({
     spreadsheetId,
-    range: `${sheetName}!A1:F1`,
+    range: `${sheetName}!A1:G1`,
     valueInputOption: "RAW",
     requestBody: {
       values: [[
@@ -94,6 +94,7 @@ async function ensureChecksHeader(sheets) {
         "oldUrl",
         "newUrl",
         "status",
+        "checkedAt",
         "error",
       ]],
     },
@@ -227,6 +228,7 @@ export async function appendCheckLog({
   oldUrl,
   newUrl,
   status,
+  checkedAt,
   error,
 }) {
   if (!Env.GOOGLE_SPREADSHEET_ID) {
@@ -244,6 +246,7 @@ export async function appendCheckLog({
       oldUrl ?? "",
       newUrl ?? "",
       status ?? "",
+      checkedAt ?? "",
       error ?? "",
     ],
   ];

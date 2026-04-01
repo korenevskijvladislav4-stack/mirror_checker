@@ -10,6 +10,22 @@ const logger = createLogger();
 const MAX_CANDIDATE_ATTEMPTS = 5;
 const EMPTY_MIRROR_CANDIDATE_ATTEMPTS = 5;
 
+function formatCheckedAtMsk(date = new Date()) {
+  const parts = new Intl.DateTimeFormat("ru-RU", {
+    timeZone: "Europe/Moscow",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).formatToParts(date);
+
+  const map = Object.fromEntries(parts.map((p) => [p.type, p.value]));
+  return `${map.day}.${map.month}.${map.year} ${map.hour}:${map.minute}:${map.second}`;
+}
+
 function computeNextNumber(a, b) {
   const n1 = extractMirrorNumber(a);
   const n2 = extractMirrorNumber(b);
@@ -333,6 +349,7 @@ export async function runDailyMirrorUpdate({ dryRun = false } = {}) {
       }
 
       const logs = [];
+      const checkedAt = formatCheckedAtMsk(new Date());
 
       // mirror2
       if (hasMirror2 || rowResult.filled.includes("mirror2")) {
@@ -358,6 +375,7 @@ export async function runDailyMirrorUpdate({ dryRun = false } = {}) {
             oldUrl: rowResult.transitions.mirror2?.from ?? row.mirror2,
             newUrl: rowResult.transitions.mirror2?.to ?? "",
             status: mirrorError ? "error" : status,
+            checkedAt,
             error: mirrorError,
           }),
         );
@@ -387,6 +405,7 @@ export async function runDailyMirrorUpdate({ dryRun = false } = {}) {
             oldUrl: rowResult.transitions.mirror3?.from ?? row.mirror3,
             newUrl: rowResult.transitions.mirror3?.to ?? "",
             status: mirrorError ? "error" : status,
+            checkedAt,
             error: mirrorError,
           }),
         );
