@@ -63,6 +63,43 @@ function normalizeSpreadsheetId(raw) {
   return v.split("#")[0].split("?")[0];
 }
 
+let checksHeaderEnsured = false;
+
+async function ensureChecksHeader(sheets) {
+  if (checksHeaderEnsured) return;
+  checksHeaderEnsured = true;
+
+  if (!Env.GOOGLE_SPREADSHEET_ID) return;
+
+  const spreadsheetId = normalizeSpreadsheetId(Env.GOOGLE_SPREADSHEET_ID);
+  const sheetName = "Checks";
+
+  const existing = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${sheetName}!A1:F1`,
+  });
+
+  const row = existing.data.values?.[0] ?? [];
+  const isEmpty = row.length === 0 || row.every((c) => !String(c ?? "").trim());
+  if (!isEmpty) return;
+
+  await sheets.spreadsheets.values.update({
+    spreadsheetId,
+    range: `${sheetName}!A1:F1`,
+    valueInputOption: "RAW",
+    requestBody: {
+      values: [[
+        "project",
+        "mirrorNumber",
+        "oldUrl",
+        "newUrl",
+        "status",
+        "error",
+      ]],
+    },
+  });
+}
+
 function buildAuth() {
   if (!Env.GOOGLE_CLIENT_EMAIL || !Env.GOOGLE_PRIVATE_KEY) {
     throw new Error(
@@ -186,13 +223,11 @@ export async function updateMirrorCell({
 
 export async function appendCheckLog({
   project,
-  mirrorName,
-  url,
+  mirrorNumber,
   oldUrl,
   newUrl,
   status,
   error,
-  checkedAt,
 }) {
   if (!Env.GOOGLE_SPREADSHEET_ID) {
     throw new Error("Не задана переменная GOOGLE_SPREADSHEET_ID");
@@ -200,15 +235,14 @@ export async function appendCheckLog({
 
   const sheets = getSheetsClient();
   const sheetName = "Checks";
+  await ensureChecksHeader(sheets);
 
   const values = [
     [
       project ?? "",
-      mirrorName ?? "",
-      url ?? "",
+      mirrorNumber ?? "",
       oldUrl ?? "",
       newUrl ?? "",
-      checkedAt ?? new Date().toISOString(),
       status ?? "",
       error ?? "",
     ],
@@ -216,7 +250,7 @@ export async function appendCheckLog({
 
   await sheets.spreadsheets.values.append({
     spreadsheetId: normalizeSpreadsheetId(Env.GOOGLE_SPREADSHEET_ID),
-    range: `${sheetName}!A:H`,
+    range: `${sheetName}!A1`,
     valueInputOption: "RAW",
     insertDataOption: "INSERT_ROWS",
     requestBody: { values },

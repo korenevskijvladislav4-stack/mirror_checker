@@ -332,8 +332,6 @@ export async function runDailyMirrorUpdate({ dryRun = false } = {}) {
         }
       }
 
-      const checkedAt = new Date().toISOString();
-
       const logs = [];
 
       // mirror2
@@ -356,13 +354,11 @@ export async function runDailyMirrorUpdate({ dryRun = false } = {}) {
         logs.push(
           appendCheckLog({
             project: row.project,
-            mirrorName: "mirror2",
-            url: row.mirror2,
+            mirrorNumber: 2,
             oldUrl: rowResult.transitions.mirror2?.from ?? row.mirror2,
             newUrl: rowResult.transitions.mirror2?.to ?? "",
             status: mirrorError ? "error" : status,
             error: mirrorError,
-            checkedAt,
           }),
         );
       }
@@ -387,13 +383,11 @@ export async function runDailyMirrorUpdate({ dryRun = false } = {}) {
         logs.push(
           appendCheckLog({
             project: row.project,
-            mirrorName: "mirror3",
-            url: row.mirror3,
+            mirrorNumber: 3,
             oldUrl: rowResult.transitions.mirror3?.from ?? row.mirror3,
             newUrl: rowResult.transitions.mirror3?.to ?? "",
             status: mirrorError ? "error" : status,
             error: mirrorError,
-            checkedAt,
           }),
         );
       }
